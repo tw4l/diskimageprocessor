@@ -6,7 +6,7 @@ if [ ! -d /usr/share/ccatools ]; then
   sudo mkdir /usr/share/ccatools
 fi
 
-dip_dir="/usr/share/ccatools/diskimageprocessor/"
+dip_dir="/usr/share/ccatools/diskimageprocessor"
 
 if [ -d $dip_dir ]; then
   sudo rm -rf $dip_dir
@@ -31,7 +31,8 @@ sudo cp README.md $dip_dir
 sudo cp -r disk_image_toolkit/ $dip_dir
 
 if [ ! -d $dip_dir/disk_image_toolkit/dfxml ]; then
-  sudo mkdir $dip_dir/disk_image_toolkit/dfxml/
+  sudo mkdir $dip_dir/disk_image_toolkit
+  sudo mkdir $dip_dir/disk_image_toolkit/dfxml
 fi
 
 sudo cp disk_image_toolkit/dfxml/dfxml.py $dip_dir/disk_image_toolkit/dfxml/dfxml.py

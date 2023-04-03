@@ -96,7 +96,7 @@ class DiskImage:
 
         logger.info("Converting EWF disk image to raw format...")
 
-        with tempfile.TemporaryDirectory() as tempdir:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tempdir:
             temp_raw_image = os.path.join(tempdir, self.identifier)
             self._call_subprocess(
                 command=[

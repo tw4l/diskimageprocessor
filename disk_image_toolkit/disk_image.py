@@ -471,7 +471,7 @@ class DiskImage:
         if not self.raw_disk_image:
             self.convert_to_raw()
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
             # Mount disk image
             subprocess.call(
                 "sudo mount -t {} -o loop '{}' {}".format(

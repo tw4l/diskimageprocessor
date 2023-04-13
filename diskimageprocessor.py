@@ -269,106 +269,102 @@ def _parse_dfxml(dfxml_path, export_all=False):
     ctimes = []
     crtimes = []
 
-    try:
-        for event, obj in objects.iterparse(dfxml_path):
-            if not isinstance(obj, objects.FileObject):
+    for event, obj in objects.iterparse(dfxml_path):
+        if not isinstance(obj, objects.FileObject):
+            continue
+
+        # skip directories and links
+        if obj.name_type:
+            if obj.name_type != "r":
                 continue
 
-            # skip directories and links
-            if obj.name_type:
-                if obj.name_type != "r":
+        # skip unallocated unless we exported all files
+        if not export_all:
+            if obj.unalloc:
+                if obj.unalloc == 1:
                     continue
 
-            # skip unallocated unless we exported all files
-            if not export_all:
-                if obj.unalloc:
-                    if obj.unalloc == 1:
-                        continue
+        volume_info["files"] += 1
 
-            volume_info["files"] += 1
+        try:
+            mtime = obj.mtime
+            mtime = str(mtime)
+            mtimes.append(mtime)
+        except:
+            pass
 
-            try:
-                mtime = obj.mtime
-                mtime = str(mtime)
-                mtimes.append(mtime)
-            except:
-                pass
+        try:
+            ctime = obj.ctime
+            ctime = str(ctime)
+            ctimes.append(ctime)
+        except:
+            pass
 
-            try:
-                ctime = obj.ctime
-                ctime = str(ctime)
-                ctimes.append(ctime)
-            except:
-                pass
+        try:
+            crtime = obj.crtime
+            crtime = str(crtime)
+            crtimes.append(crtime)
+        except:
+            pass
 
-            try:
-                crtime = obj.crtime
-                crtime = str(crtime)
-                crtimes.append(crtime)
-            except:
-                pass
+        volume_info["bytes"] += obj.filesize
 
-            volume_info["bytes"] += obj.filesize
+    # filter "None" values from date lists
+    for date_list in mtimes, ctimes, crtimes:
+        while "None" in date_list:
+            date_list.remove("None")
 
-        # filter "None" values from date lists
-        for date_list in mtimes, ctimes, crtimes:
-            while "None" in date_list:
-                date_list.remove("None")
+    # determine earliest and latest MAC dates from lists
+    date_earliest_m = ""
+    date_latest_m = ""
+    date_earliest_c = ""
+    date_latest_c = ""
+    date_earliest_cr = ""
+    date_latest_cr = ""
+    date_statement = ""
 
-        # determine earliest and latest MAC dates from lists
-        date_earliest_m = ""
-        date_latest_m = ""
-        date_earliest_c = ""
-        date_latest_c = ""
-        date_earliest_cr = ""
-        date_latest_cr = ""
-        date_statement = ""
+    if mtimes:
+        date_earliest_m = min(mtimes)
+        date_latest_m = max(mtimes)
+    if ctimes:
+        date_earliest_c = min(ctimes)
+        date_latest_c = max(ctimes)
+    if crtimes:
+        date_earliest_cr = min(crtimes)
+        date_latest_cr = max(crtimes)
 
-        if mtimes:
-            date_earliest_m = min(mtimes)
-            date_latest_m = max(mtimes)
-        if ctimes:
-            date_earliest_c = min(ctimes)
-            date_latest_c = max(ctimes)
-        if crtimes:
-            date_earliest_cr = min(crtimes)
-            date_latest_cr = max(crtimes)
+    # determine which set of dates to use (logic: use set with earliest start date,
+    # default to date modified)
+    use_ctimes = False
+    use_crtimes = False
 
-        # determine which set of dates to use (logic: use set with earliest start date,
-        # default to date modified)
-        use_ctimes = False
-        use_crtimes = False
+    if not date_earliest_m:
+        date_earliest_m = datetime.datetime.now().year
+        date_latest_m = datetime.datetime.now().year
+    date_to_use = date_earliest_m
 
-        if not date_earliest_m:
-            date_earliest_m = datetime.datetime.now().year
-            date_latest_m = datetime.datetime.now().year
-        date_to_use = date_earliest_m
+    if date_earliest_c:
+        if date_earliest_c < date_to_use:
+            date_to_use = date_earliest_c
+            use_ctimes = True
+    if date_earliest_cr:
+        if date_earliest_cr < date_to_use:
+            date_to_use = date_earliest_cr
+            use_ctimes = False
+            use_crtimes = True
 
-        if date_earliest_c:
-            if date_earliest_c < date_to_use:
-                date_to_use = date_earliest_c
-                use_ctimes = True
-        if date_earliest_cr:
-            if date_earliest_cr < date_to_use:
-                date_to_use = date_earliest_cr
-                use_ctimes = False
-                use_crtimes = True
+    if use_ctimes:
+        date_earliest = date_earliest_c[:10]
+        date_latest = date_latest_c[:10]
+    elif use_crtimes:
+        date_earliest = date_earliest_cr[:10]
+        date_latest = date_latest_cr[:10]
+    else:
+        date_earliest = date_earliest_m[:10]
+        date_latest = date_latest_m[:10]
 
-        if use_ctimes:
-            date_earliest = date_earliest_c[:10]
-            date_latest = date_latest_c[:10]
-        elif use_crtimes:
-            date_earliest = date_earliest_cr[:10]
-            date_latest = date_latest_cr[:10]
-        else:
-            date_earliest = date_earliest_m[:10]
-            date_latest = date_latest_m[:10]
-
-        volume_info["date_earliest"] = date_earliest
-        volume_info["date_latest"] = date_latest
-
-    except Exception:
-        return
+    volume_info["date_earliest"] = date_earliest
+    volume_info["date_latest"] = date_latest
 
     return volume_info
 
